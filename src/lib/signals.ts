@@ -47,6 +47,26 @@ const thresholds: Record<string, ThresholdConfig> = {
     yellow: (v) => v >= 0.4 && v <= 0.7,
     red: (v) => v < 0.4,
   },
+  price_200ma_ratio: {
+    green: (v) => v > 1,
+    yellow: (v) => v >= 0.75 && v <= 1,
+    red: (v) => v < 0.75,
+  },
+  capitulation: {
+    green: (v) => v === 0,
+    yellow: (v) => false,
+    red: (v) => v === 1,
+  },
+  euphoria: {
+    green: (v) => v === 0,
+    yellow: (v) => false,
+    red: (v) => v === 1,
+  },
+  onchain_signal: {
+    green: (v) => v > 0.6,
+    yellow: (v) => v >= 0.4 && v <= 0.6,
+    red: (v) => v < 0.4,
+  },
 };
 
 export function getSignalZone(

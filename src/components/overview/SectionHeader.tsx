@@ -4,7 +4,7 @@ interface SectionHeaderProps {
 
 export default function SectionHeader({ title }: SectionHeaderProps) {
   return (
-    <div className="relative mb-4 mt-10 first:mt-0 flex items-center gap-4">
+    <div className="relative mb-4 mt-10 flex items-center gap-4">
       <h2 className="shrink-0 text-xs font-semibold tracking-[0.2em] uppercase text-[var(--text-secondary)]">
         {title}
       </h2>

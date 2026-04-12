@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import {
   AreaChart,
   Area,
@@ -31,11 +30,7 @@ export default function MetricCard({
   const zone = value != null ? getSignalZone(metric, value) : null;
   const color = getSignalColor(zone);
 
-  // Unique gradient ID to avoid SVG collisions
-  const gradientId = useMemo(
-    () => `spark-${metric}-${Math.random().toString(36).slice(2, 8)}`,
-    [metric],
-  );
+  const gradientId = `spark-${metric}`;
 
   return (
     <div
@@ -105,9 +100,7 @@ export default function MetricCard({
                 stroke={color}
                 strokeWidth={1.5}
                 fill={`url(#${gradientId})`}
-                isAnimationActive={true}
-                animationDuration={1500}
-                animationEasing="ease-in-out"
+                isAnimationActive={false}
               />
             </AreaChart>
           </ResponsiveContainer>
