@@ -40,5 +40,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# large data files
-public/data/all_metrics.csv
+# large data files tracked via git (10.9MB CSV)
+# public/data/all_metrics.csv
