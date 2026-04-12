@@ -16,14 +16,12 @@ interface DataContextValue {
   error: string | null;
 }
 
-const DataContext = createContext<DataContextValue>({
-  data: [],
-  loading: true,
-  error: null,
-});
+const DataContext = createContext<DataContextValue | null>(null);
 
-export function useMetrics() {
-  return useContext(DataContext);
+export function useMetrics(): DataContextValue {
+  const ctx = useContext(DataContext);
+  if (!ctx) throw new Error("useMetrics must be used within DataProvider");
+  return ctx;
 }
 
 export default function DataProvider({ children }: { children: ReactNode }) {

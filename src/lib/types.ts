@@ -95,10 +95,4 @@ export type MetricCategory =
   | "whale"
   | "valuation";
 
-export interface SignalThreshold {
-  green: { min?: number; max?: number };
-  yellow: { min?: number; max?: number };
-  red: { min?: number; max?: number };
-}
-
 export type SignalZone = "green" | "yellow" | "red";
