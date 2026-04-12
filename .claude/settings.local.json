@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(where code:*)",
+      "Bash(tasklist)",
+      "Bash(code --verbose)",
+      "Bash(code)",
+      "WebSearch",
+      "Bash(git init:*)",
+      "Bash(npx create-next-app@latest:*)",
+      "Bash(cp -r src package.json package-lock.json tsconfig.json next.config.ts next-env.d.ts postcss.config.mjs .gitignore eslint.config.mjs /d/VSCode/OnChainLab/)",
+      "Bash(cp -r node_modules /d/VSCode/OnChainLab/)",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)"
+    ]
+  }
+}
