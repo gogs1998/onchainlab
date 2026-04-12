@@ -23,6 +23,18 @@ export default function Home() {
     [data],
   );
 
+  const metricCount = useMemo(() => {
+    if (data.length === 0) return 0;
+    return Object.keys(data[0]).filter((k) => k !== "date").length;
+  }, [data]);
+
+  const yearSpan = useMemo(() => {
+    if (data.length === 0) return 0;
+    const first = new Date(data[0].date).getFullYear();
+    const last = new Date(data[data.length - 1].date).getFullYear();
+    return last - first;
+  }, [data]);
+
   return (
     <div className="relative min-h-[calc(100vh-56px)] overflow-hidden">
       {/* Subtle grid background */}
@@ -64,7 +76,7 @@ export default function Home() {
             opacity: 0.6,
           }}
         >
-          131 metrics &middot; 17 years of data &middot; Zero cost
+          {metricCount} metrics &middot; {yearSpan} years of data &middot; Zero cost
         </p>
 
         {/* CTA Buttons */}
@@ -120,10 +132,11 @@ export default function Home() {
         className="relative mx-auto max-w-2xl px-4 pb-16 text-center"
         style={{ animation: "fadeIn 0.8s ease-out 0.75s both" }}
       >
-        <div className="rounded-lg border border-zinc-800/60 bg-[var(--bg-card)]/50 px-6 py-6">
+        <div className="rounded-lg border border-zinc-800/60 px-6 py-6" style={{ backgroundColor: "rgba(26, 26, 46, 0.5)" }}>
           <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
-            OnChainLab is an open-source research tool that aggregates 131
-            Bitcoin on-chain metrics spanning 17 years of blockchain history.
+            OnChainLab is an open-source research tool that aggregates{" "}
+            {metricCount} Bitcoin on-chain metrics spanning {yearSpan} years of
+            blockchain history.
             Built for analysts, researchers, and long-term holders who want raw
             data without paywalls or vendor lock-in. All data is processed
             locally with zero tracking.
