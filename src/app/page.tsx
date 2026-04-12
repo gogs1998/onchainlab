@@ -134,7 +134,7 @@ export default function Home() {
       >
         <div className="rounded-lg border border-zinc-800/60 px-6 py-6" style={{ backgroundColor: "rgba(26, 26, 46, 0.5)" }}>
           <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
-            OnChainLab is an open-source research tool that aggregates{" "}
+            OnChainLab aggregates{" "}
             {metricCount} Bitcoin on-chain metrics spanning {yearSpan} years of
             blockchain history.
             Built for analysts, researchers, and long-term holders who want raw

@@ -34,22 +34,12 @@ export default function Nav() {
             Lab
           </Link>
         </div>
-        <div className="flex items-center gap-4">
-          <Link
-            href="/about"
-            className="text-sm text-zinc-500 hover:text-zinc-300"
-          >
-            About
-          </Link>
-          <a
-            href="https://github.com/gogs1998/GN"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-zinc-500 hover:text-zinc-300"
-          >
-            GitHub
-          </a>
-        </div>
+        <Link
+          href="/about"
+          className="text-sm text-zinc-500 hover:text-zinc-300"
+        >
+          About
+        </Link>
       </div>
     </nav>
   );
