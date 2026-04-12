@@ -27,22 +27,28 @@ const thresholds: Record<string, ThresholdConfig> = {
     yellow: (v) => v >= 2 && v <= 3.5,
     red: (v) => v > 3.5,
   },
-  drawdown_pct: {
-    green: (v) => v > -0.1,
-    yellow: (v) => v >= -0.3 && v <= -0.1,
-    red: (v) => v < -0.3,
+  reserve_risk: {
+    green: (v) => v < 0.005,
+    yellow: (v) => v >= 0.005 && v <= 0.02,
+    red: (v) => v > 0.02,
   },
-  utxo_profit_share: {
+  puell_multiple: {
+    green: (v) => v < 0.5,
+    yellow: (v) => v >= 0.5 && v <= 4,
+    red: (v) => v > 4,
+  },
+  rsi_14: {
+    green: (v) => v > 50 && v < 70,
+    yellow: (v) => v >= 30 && v <= 50,
+    red: (v) => v < 30 || v >= 70,
+  },
+  supply_in_profit_pct: {
     green: (v) => v > 0.7,
     yellow: (v) => v >= 0.4 && v <= 0.7,
     red: (v) => v < 0.4,
   },
 };
 
-/**
- * Determine the signal zone for a given metric and value.
- * Returns null if the metric is unknown or the value is null/undefined.
- */
 export function getSignalZone(
   metric: string,
   value: number | null | undefined,
@@ -65,10 +71,6 @@ const signalColors: Record<SignalZone, string> = {
   red: "#ef4444",
 };
 
-/**
- * Map a signal zone to its hex color.
- * Returns a neutral gray for null/unknown zones.
- */
 export function getSignalColor(zone: SignalZone | null): string {
   if (zone === null) return "#6b7280";
   return signalColors[zone] ?? "#6b7280";

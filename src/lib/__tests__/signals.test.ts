@@ -42,20 +42,20 @@ describe("getSignalZone", () => {
     expect(getSignalZone("mvrv", 4.0)).toBe("red");
   });
 
-  it("returns green for drawdown_pct > -0.1", () => {
-    expect(getSignalZone("drawdown_pct", -0.05)).toBe("green");
+  it("returns green for reserve_risk < 0.005", () => {
+    expect(getSignalZone("reserve_risk", 0.002)).toBe("green");
   });
 
-  it("returns red for drawdown_pct < -0.3", () => {
-    expect(getSignalZone("drawdown_pct", -0.5)).toBe("red");
+  it("returns red for reserve_risk > 0.02", () => {
+    expect(getSignalZone("reserve_risk", 0.05)).toBe("red");
   });
 
-  it("returns green for utxo_profit_share > 0.7", () => {
-    expect(getSignalZone("utxo_profit_share", 0.8)).toBe("green");
+  it("returns green for puell_multiple < 0.5", () => {
+    expect(getSignalZone("puell_multiple", 0.3)).toBe("green");
   });
 
-  it("returns red for utxo_profit_share < 0.4", () => {
-    expect(getSignalZone("utxo_profit_share", 0.3)).toBe("red");
+  it("returns red for puell_multiple > 4", () => {
+    expect(getSignalZone("puell_multiple", 5)).toBe("red");
   });
 
   it("returns null for undefined value", () => {
