@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from "react";
 import { createChart, LineSeries } from "lightweight-charts";
-import type { IChartApi } from "lightweight-charts";
 
 /** Assign a stable color per metric key. */
 const CHART_COLORS = [
@@ -40,7 +39,6 @@ export default function ChartPanel({
   onRemove,
 }: ChartPanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const chartRef = useRef<IChartApi | null>(null);
 
   useEffect(() => {
     if (!containerRef.current || data.length === 0) return;
@@ -74,8 +72,6 @@ export default function ChartPanel({
       },
     });
 
-    chartRef.current = chart;
-
     const series = chart.addSeries(LineSeries, {
       color,
       lineWidth: 2,
@@ -86,25 +82,25 @@ export default function ChartPanel({
 
     series.setData(
       data.map((d) => ({
-        time: d.date as unknown as import("lightweight-charts").Time,
+        time: d.date as string,
         value: d.value,
       }))
     );
 
     chart.timeScale().fitContent();
 
-    // Resize handler
-    const handleResize = () => {
-      if (containerRef.current) {
-        chart.applyOptions({ width: containerRef.current.clientWidth });
+    // Resize observer for layout-driven and window resizes
+    const ro = new ResizeObserver((entries) => {
+      const { width } = entries[0].contentRect;
+      if (width > 0) {
+        chart.applyOptions({ width });
       }
-    };
-    window.addEventListener("resize", handleResize);
+    });
+    ro.observe(containerRef.current);
 
     return () => {
-      window.removeEventListener("resize", handleResize);
+      ro.disconnect();
       chart.remove();
-      chartRef.current = null;
     };
   }, [metricKey, data]);
 
