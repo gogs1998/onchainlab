@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { useMetrics } from "@/components/DataProvider";
 import { getLatestRow, getLatestValue, getLastNDays, getMetricSeries } from "@/lib/data";
+import { getSignalZone } from "@/lib/signals";
 import SectionHeader from "@/components/overview/SectionHeader";
 import MetricCard from "@/components/overview/MetricCard";
 
@@ -208,13 +209,20 @@ export default function OverviewPage() {
   const latestValues = useMemo(() => {
     if (data.length === 0) return new Map<string, number | null>();
     const map = new Map<string, number | null>();
+    // Include all card metrics + composite score metrics
+    const allKeys = new Set<string>();
     for (const section of sections) {
-      for (const card of section.cards) {
-        if (!map.has(card.metric)) {
-          const hit = getLatestValue(data, card.metric);
-          map.set(card.metric, hit ? hit.value : null);
-        }
-      }
+      for (const card of section.cards) allKeys.add(card.metric);
+    }
+    for (const m of [
+      "nupl", "mvrv_zscore", "sopr", "mvrv", "reserve_risk",
+      "puell_multiple", "rsi_14", "supply_in_profit_pct",
+      "price_200ma_ratio", "onchain_signal",
+    ]) allKeys.add(m);
+
+    for (const metric of allKeys) {
+      const hit = getLatestValue(data, metric);
+      map.set(metric, hit ? hit.value : null);
     }
     return map;
   }, [data]);
@@ -235,6 +243,24 @@ export default function OverviewPage() {
 
   if (!latest) return null;
 
+  // ── Composite Market Health Score ──────────────────────
+  const scoreMetrics = [
+    "nupl", "mvrv_zscore", "sopr", "mvrv", "reserve_risk",
+    "puell_multiple", "rsi_14", "supply_in_profit_pct",
+    "price_200ma_ratio", "onchain_signal",
+  ];
+  let bullCount = 0, bearCount = 0, neutralCount = 0, scoreTotal = 0;
+  for (const m of scoreMetrics) {
+    const val = latestValues.get(m) ?? null;
+    const zone = getSignalZone(m, val);
+    if (zone === "green") { bullCount++; scoreTotal++; }
+    else if (zone === "yellow") { neutralCount++; scoreTotal++; }
+    else if (zone === "red") { bearCount++; scoreTotal++; }
+  }
+  const healthPct = scoreTotal > 0 ? Math.round(((bullCount + neutralCount * 0.5) / scoreTotal) * 100) : 50;
+  const healthLabel = healthPct >= 70 ? "Bullish" : healthPct >= 40 ? "Neutral" : "Bearish";
+  const healthColor = healthPct >= 70 ? "#22c55e" : healthPct >= 40 ? "#eab308" : "#ef4444";
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Page header */}
@@ -245,6 +271,83 @@ export default function OverviewPage() {
         <p className="mt-1 text-sm text-[var(--text-secondary)]">
           Market snapshot for {latest.date}
         </p>
+      </div>
+
+      {/* Composite Market Health */}
+      <div className="mb-8 overflow-hidden rounded-xl border border-zinc-800/60 bg-[var(--bg-card)] p-6 shadow-lg shadow-black/20">
+        <div className="flex flex-col items-center gap-4 sm:flex-row sm:gap-8">
+          {/* Score gauge */}
+          <div className="flex flex-col items-center">
+            <div
+              className="flex h-24 w-24 items-center justify-center rounded-full border-4"
+              style={{ borderColor: healthColor }}
+            >
+              <span
+                className="text-3xl font-bold"
+                style={{ color: healthColor }}
+              >
+                {healthPct}
+              </span>
+            </div>
+            <span
+              className="mt-2 text-sm font-semibold tracking-wide"
+              style={{ color: healthColor }}
+            >
+              {healthLabel}
+            </span>
+          </div>
+          {/* Breakdown */}
+          <div className="flex-1">
+            <h2 className="mb-2 font-[family-name:var(--font-mono)] text-xs font-bold tracking-[0.15em] uppercase text-zinc-400">
+              Market Health Score
+            </h2>
+            <p className="mb-3 text-[12px] leading-relaxed text-zinc-500">
+              Composite of {scoreTotal} on-chain indicators. Green = supportive of
+              price, yellow = neutral, red = caution.
+            </p>
+            <div className="flex gap-4 text-xs">
+              <div className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-green-500" />
+                <span className="text-zinc-400">
+                  {bullCount} Bullish
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-yellow-500" />
+                <span className="text-zinc-400">
+                  {neutralCount} Neutral
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-red-500" />
+                <span className="text-zinc-400">
+                  {bearCount} Bearish
+                </span>
+              </div>
+            </div>
+            {/* Mini bar */}
+            <div className="mt-3 flex h-2 overflow-hidden rounded-full">
+              {bullCount > 0 && (
+                <div
+                  className="bg-green-500"
+                  style={{ width: `${(bullCount / scoreTotal) * 100}%` }}
+                />
+              )}
+              {neutralCount > 0 && (
+                <div
+                  className="bg-yellow-500"
+                  style={{ width: `${(neutralCount / scoreTotal) * 100}%` }}
+                />
+              )}
+              {bearCount > 0 && (
+                <div
+                  className="bg-red-500"
+                  style={{ width: `${(bearCount / scoreTotal) * 100}%` }}
+                />
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Sections */}

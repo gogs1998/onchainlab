@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createChart, LineSeries } from "lightweight-charts";
+import { metricCatalog } from "@/lib/metrics";
 
 /** Assign a stable color per metric key. */
 const CHART_COLORS = [
@@ -25,10 +26,11 @@ function colorForKey(key: string): string {
   return CHART_COLORS[Math.abs(hash) % CHART_COLORS.length];
 }
 
-interface ChartPanelProps {
+export interface ChartPanelProps {
   metricKey: string;
   label: string;
   data: { date: string; value: number }[];
+  priceData?: { date: string; value: number }[];
   onRemove: () => void;
 }
 
@@ -36,9 +38,18 @@ export default function ChartPanel({
   metricKey,
   label,
   data,
+  priceData,
   onRemove,
 }: ChartPanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [showPrice, setShowPrice] = useState(false);
+  const [logScale, setLogScale] = useState(false);
+  const [showDesc, setShowDesc] = useState(false);
+
+  const description =
+    metricCatalog.find((m) => m.key === metricKey)?.description ?? "";
+
+  const isBtcPrice = metricKey === "btc_price";
 
   useEffect(() => {
     if (!containerRef.current || data.length === 0) return;
@@ -65,6 +76,7 @@ export default function ChartPanel({
       rightPriceScale: {
         borderColor: "#27272a",
         scaleMargins: { top: 0.1, bottom: 0.1 },
+        mode: logScale ? 1 : 0,
       },
       timeScale: {
         borderColor: "#27272a",
@@ -72,6 +84,7 @@ export default function ChartPanel({
       },
     });
 
+    // Main metric series
     const series = chart.addSeries(LineSeries, {
       color,
       lineWidth: 2,
@@ -81,20 +94,34 @@ export default function ChartPanel({
     });
 
     series.setData(
-      data.map((d) => ({
-        time: d.date as string,
-        value: d.value,
-      }))
+      data.map((d) => ({ time: d.date as string, value: d.value }))
     );
+
+    // BTC price overlay (right scale, semi-transparent)
+    if (showPrice && !isBtcPrice && priceData && priceData.length > 0) {
+      const priceSeries = chart.addSeries(LineSeries, {
+        color: "rgba(251,191,36,0.35)",
+        lineWidth: 1,
+        crosshairMarkerRadius: 0,
+        priceLineVisible: false,
+        priceScaleId: "price-overlay",
+        lastValueVisible: false,
+      });
+      priceSeries.setData(
+        priceData.map((d) => ({ time: d.date as string, value: d.value }))
+      );
+      chart.priceScale("price-overlay").applyOptions({
+        scaleMargins: { top: 0.1, bottom: 0.1 },
+        borderVisible: false,
+        visible: false,
+      });
+    }
 
     chart.timeScale().fitContent();
 
-    // Resize observer for layout-driven and window resizes
     const ro = new ResizeObserver((entries) => {
       const { width } = entries[0].contentRect;
-      if (width > 0) {
-        chart.applyOptions({ width });
-      }
+      if (width > 0) chart.applyOptions({ width });
     });
     ro.observe(containerRef.current);
 
@@ -102,12 +129,12 @@ export default function ChartPanel({
       ro.disconnect();
       chart.remove();
     };
-  }, [metricKey, data]);
+  }, [metricKey, data, priceData, showPrice, logScale, isBtcPrice]);
 
   return (
     <div className="overflow-hidden rounded-lg border border-zinc-800/60 bg-[var(--bg-card)] shadow-lg shadow-black/20">
       {/* Header bar */}
-      <div className="flex items-center justify-between border-b border-zinc-800/40 px-4 py-2.5">
+      <div className="flex items-center justify-between border-b border-zinc-800/40 px-4 py-2">
         <div className="flex items-center gap-2.5">
           <span
             className="h-2 w-2 rounded-full"
@@ -117,13 +144,65 @@ export default function ChartPanel({
             {label}
           </span>
         </div>
-        <button
-          onClick={onRemove}
-          className="rounded px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-zinc-600 transition-colors hover:bg-red-500/10 hover:text-red-400"
-        >
-          Remove
-        </button>
+        <div className="flex items-center gap-1">
+          {/* Info toggle */}
+          {description && (
+            <button
+              onClick={() => setShowDesc((p) => !p)}
+              className={`rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors ${
+                showDesc
+                  ? "bg-blue-500/15 text-blue-400"
+                  : "text-zinc-600 hover:bg-zinc-800/60 hover:text-zinc-400"
+              }`}
+              title="Show metric info"
+            >
+              i
+            </button>
+          )}
+          {/* Log toggle */}
+          <button
+            onClick={() => setLogScale((p) => !p)}
+            className={`rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors ${
+              logScale
+                ? "bg-purple-500/15 text-purple-400"
+                : "text-zinc-600 hover:bg-zinc-800/60 hover:text-zinc-400"
+            }`}
+            title="Toggle logarithmic scale"
+          >
+            LOG
+          </button>
+          {/* Price overlay toggle */}
+          {!isBtcPrice && priceData && (
+            <button
+              onClick={() => setShowPrice((p) => !p)}
+              className={`rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors ${
+                showPrice
+                  ? "bg-amber-500/15 text-amber-400"
+                  : "text-zinc-600 hover:bg-zinc-800/60 hover:text-zinc-400"
+              }`}
+              title="Toggle BTC price overlay"
+            >
+              BTC
+            </button>
+          )}
+          {/* Remove */}
+          <button
+            onClick={onRemove}
+            className="rounded px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-zinc-600 transition-colors hover:bg-red-500/10 hover:text-red-400"
+          >
+            ✕
+          </button>
+        </div>
       </div>
+
+      {/* Description panel */}
+      {showDesc && description && (
+        <div className="border-b border-zinc-800/40 bg-zinc-900/50 px-4 py-2">
+          <p className="text-[11px] leading-relaxed text-zinc-400">
+            {description}
+          </p>
+        </div>
+      )}
 
       {/* Chart container */}
       <div ref={containerRef} className="w-full" />

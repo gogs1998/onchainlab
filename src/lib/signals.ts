@@ -22,6 +22,11 @@ const thresholds: Record<string, ThresholdConfig> = {
     yellow: (v) => v >= 0.95 && v <= 1.05,
     red: (v) => v < 0.95,
   },
+  asopr: {
+    green: (v) => v > 1.05,
+    yellow: (v) => v >= 0.95 && v <= 1.05,
+    red: (v) => v < 0.95,
+  },
   mvrv: {
     green: (v) => v < 2,
     yellow: (v) => v >= 2 && v <= 3.5,
@@ -66,6 +71,31 @@ const thresholds: Record<string, ThresholdConfig> = {
     green: (v) => v > 0.6,
     yellow: (v) => v >= 0.4 && v <= 0.6,
     red: (v) => v < 0.4,
+  },
+  profit_ratio: {
+    green: (v) => v > 0.6,
+    yellow: (v) => v >= 0.4 && v <= 0.6,
+    red: (v) => v < 0.4,
+  },
+  realized_pl_ratio: {
+    green: (v) => v > 1.5,
+    yellow: (v) => v >= 0.5 && v <= 1.5,
+    red: (v) => v < 0.5,
+  },
+  accumulation_signal: {
+    green: (v) => v > 0.5,
+    yellow: (v) => v >= 0.2 && v <= 0.5,
+    red: (v) => v < 0.2,
+  },
+  sth_sopr_proxy: {
+    green: (v) => v > 1.02,
+    yellow: (v) => v >= 0.98 && v <= 1.02,
+    red: (v) => v < 0.98,
+  },
+  lth_sopr_proxy: {
+    green: (v) => v > 1,
+    yellow: (v) => v >= 0.9 && v <= 1,
+    red: (v) => v < 0.9,
   },
 };
 

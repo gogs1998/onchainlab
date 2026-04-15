@@ -9,16 +9,40 @@ import ChartPanel from "@/components/lab/ChartPanel";
 
 const DEFAULT_METRICS = ["btc_price", "mvrv_zscore"];
 
+type TimeRange = "7d" | "1m" | "3m" | "6m" | "1y" | "2y" | "all";
+const RANGES: { key: TimeRange; label: string; days: number | null }[] = [
+  { key: "7d", label: "7D", days: 7 },
+  { key: "1m", label: "1M", days: 30 },
+  { key: "3m", label: "3M", days: 90 },
+  { key: "6m", label: "6M", days: 180 },
+  { key: "1y", label: "1Y", days: 365 },
+  { key: "2y", label: "2Y", days: 730 },
+  { key: "all", label: "ALL", days: null },
+];
+
 export default function LabPage() {
   const { data } = useMetrics();
   const [selectedMetrics, setSelectedMetrics] =
     useState<string[]>(DEFAULT_METRICS);
+  const [timeRange, setTimeRange] = useState<TimeRange>("all");
 
   const catalogMap = useMemo(() => {
     const map = new Map<string, (typeof metricCatalog)[number]>();
     for (const m of metricCatalog) map.set(m.key, m);
     return map;
   }, []);
+
+  const rangeDays = RANGES.find((r) => r.key === timeRange)?.days ?? null;
+  const slicedData = useMemo(
+    () => (rangeDays ? data.slice(-rangeDays) : data),
+    [data, rangeDays],
+  );
+
+  // Pre-compute BTC price series for overlay (once, using sliced data)
+  const priceData = useMemo(
+    () => getMetricSeries(slicedData, "btc_price"),
+    [slicedData],
+  );
 
   const handleToggle = (key: string) => {
     setSelectedMetrics((prev) =>
@@ -33,6 +57,23 @@ export default function LabPage() {
 
       {/* Chart area */}
       <div className="flex-1 overflow-y-auto bg-[var(--bg-primary)] p-4 xl:p-6">
+        {/* Time range selector */}
+        <div className="mb-4 flex items-center gap-1">
+          {RANGES.map((r) => (
+            <button
+              key={r.key}
+              onClick={() => setTimeRange(r.key)}
+              className={`rounded-md px-3 py-1 text-[11px] font-semibold tracking-wide transition-colors ${
+                timeRange === r.key
+                  ? "bg-blue-500/20 text-blue-400"
+                  : "text-zinc-500 hover:bg-zinc-800/50 hover:text-zinc-300"
+              }`}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
+
         {selectedMetrics.length === 0 ? (
           <div className="flex h-full items-center justify-center">
             <div className="text-center">
@@ -61,13 +102,14 @@ export default function LabPage() {
             {selectedMetrics.map((key) => {
               const meta = catalogMap.get(key);
               if (!meta) return null;
-              const series = getMetricSeries(data, key);
+              const series = getMetricSeries(slicedData, key);
               return (
                 <ChartPanel
                   key={key}
                   metricKey={key}
                   label={meta.label}
                   data={series}
+                  priceData={priceData}
                   onRemove={() => handleToggle(key)}
                 />
               );
