@@ -21,7 +21,7 @@ export default function AboutPage() {
         </h2>
         <p className="mt-3 leading-relaxed text-[var(--text-secondary)]">
           OnChainLab is a free Bitcoin on-chain analytics dashboard.
-          It tracks 131 metrics computed from the public blockchain, with daily
+          It tracks 136 metrics computed from the public blockchain, with daily
           data going back to 2009. No accounts, no paywalls, no tracking.
         </p>
       </section>
@@ -49,12 +49,9 @@ export default function AboutPage() {
             <span className="font-[family-name:var(--font-mono)] text-sm text-[var(--text-primary)]">
               Realized Cap
             </span>{" "}
-            — Calculated as{" "}
-            <code className="rounded bg-[var(--bg-card)] px-1.5 py-0.5 font-[family-name:var(--font-mono)] text-sm text-[var(--accent)]">
-              total_mined_btc × price_200ma
-            </code>
-            . This is a project convention and differs from the standard
-            definition.
+            — Estimated via multi-seed interpolation of UTXO creation prices.
+            Each UTXO is valued at the BTC price on the day it was created, then
+            summed across all live UTXOs.
           </li>
           <li className="leading-relaxed">
             <span className="font-[family-name:var(--font-mono)] text-sm text-[var(--text-primary)]">
@@ -81,8 +78,8 @@ export default function AboutPage() {
             <span className="font-[family-name:var(--font-mono)] text-sm text-[var(--text-primary)]">
               aSOPR
             </span>{" "}
-            — Adjusted SOPR. Intentionally sparse in this dataset (~88% null
-            values) due to filtering criteria.
+            — Adjusted SOPR. Filters out outputs younger than one hour to
+            reduce noise from change outputs.
           </li>
         </ul>
       </section>

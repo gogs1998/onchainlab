@@ -17,7 +17,7 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "OnChainLab — Bitcoin On-Chain Analytics",
   description:
-    "Open-source Bitcoin on-chain analytics. 131 metrics. 17 years of data. Zero cost.",
+    "Open-source Bitcoin on-chain analytics. 136 metrics. 17 years of data. Zero cost.",
 };
 
 export default function RootLayout({
