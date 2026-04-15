@@ -48,6 +48,8 @@ export default function Nav() {
           {navLink("/signals", "Signals")}
           {navLink("/cycles", "Cycles")}
           {navLink("/backtest", "Backtest")}
+          {navLink("/correlations", "Correlations")}
+          {navLink("/builder", "Builder")}
         </div>
         <div className="flex items-center gap-3">
           <button

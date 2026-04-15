@@ -5,6 +5,7 @@ import { useMetrics } from "@/components/DataProvider";
 import { getLatestRow, getLatestValue, getLastNDays, getMetricSeries, getMetricZScore } from "@/lib/data";
 import { getSignalZone } from "@/lib/signals";
 import { metricCatalog } from "@/lib/metrics";
+import { computeComposites } from "@/lib/composites";
 import SectionHeader from "@/components/overview/SectionHeader";
 import MetricCard from "@/components/overview/MetricCard";
 
@@ -351,6 +352,9 @@ export default function OverviewPage() {
         </div>
       </div>
 
+      {/* Composite Scores */}
+      <CompositeScores data={data} />
+
       {/* Metric Extremes — "What's screaming right now?" */}
       <MetricExtremes data={data} />
 
@@ -376,6 +380,70 @@ export default function OverviewPage() {
 
       {/* Bottom spacing */}
       <div className="h-12" />
+    </div>
+  );
+}
+
+/* ── Composite Scores sub-component ───────────────────────── */
+
+function CompositeScores({ data }: { data: import("@/lib/types").MetricRow[] }) {
+  const scores = useMemo(() => computeComposites(data), [data]);
+
+  if (scores.length === 0) return null;
+
+  return (
+    <div className="mb-8">
+      <SectionHeader title="Composite Scores" />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {scores.map((s) => (
+          <div
+            key={s.id}
+            className="rounded-xl border border-zinc-800/60 bg-[var(--bg-card)] p-5 shadow-lg shadow-black/20"
+          >
+            {/* Gauge */}
+            <div className="flex items-center gap-4">
+              <div
+                className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-[3px]"
+                style={{ borderColor: s.color }}
+              >
+                <span className="text-2xl font-bold" style={{ color: s.color }}>
+                  {s.score}
+                </span>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[var(--text-primary)]">
+                  {s.label}
+                </p>
+                <p className="text-xs font-medium" style={{ color: s.color }}>
+                  {s.scoreLabel}
+                </p>
+              </div>
+            </div>
+            {/* Description */}
+            <p className="mt-3 text-[11px] leading-relaxed text-zinc-500">
+              {s.description}
+            </p>
+            {/* Metric breakdown */}
+            <div className="mt-3 space-y-1">
+              {s.metrics.map((m) => {
+                const dotColor =
+                  m.zone === "green" ? "#22c55e" : m.zone === "red" ? "#ef4444" : m.zone === "yellow" ? "#eab308" : "#6b7280";
+                return (
+                  <div key={m.key} className="flex items-center justify-between text-[10px]">
+                    <div className="flex items-center gap-1.5">
+                      <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: dotColor }} />
+                      <span className="text-zinc-400">{m.label}</span>
+                    </div>
+                    <span className="font-mono text-zinc-500">
+                      {m.value !== null ? (Math.abs(m.value) >= 1000 ? m.value.toLocaleString(undefined, { maximumFractionDigits: 0 }) : m.value.toFixed(3)) : "—"}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
