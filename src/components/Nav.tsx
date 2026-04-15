@@ -47,6 +47,7 @@ export default function Nav() {
           {navLink("/lab", "Lab")}
           {navLink("/signals", "Signals")}
           {navLink("/cycles", "Cycles")}
+          {navLink("/backtest", "Backtest")}
         </div>
         <div className="flex items-center gap-3">
           <button
