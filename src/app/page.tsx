@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { useMetrics } from "@/components/DataProvider";
-import { getLatestRow } from "@/lib/data";
+import { getLatestRow, getBiggestMovers } from "@/lib/data";
+import { metricCatalog } from "@/lib/metrics";
 import StatCard from "@/components/StatCard";
 import PriceSparkline from "@/components/PriceSparkline";
 
@@ -33,6 +34,20 @@ export default function Home() {
     const first = new Date(data[0].date).getFullYear();
     const last = new Date(data[data.length - 1].date).getFullYear();
     return last - first;
+  }, [data]);
+
+  const catalogMap = useMemo(() => {
+    const map = new Map<string, (typeof metricCatalog)[number]>();
+    for (const m of metricCatalog) map.set(m.key, m);
+    return map;
+  }, []);
+
+  const biggestMovers = useMemo(() => {
+    if (data.length < 2) return [];
+    const keys = metricCatalog
+      .filter((m) => !["btc_price", "market_cap", "realized_cap"].includes(m.key))
+      .map((m) => m.key);
+    return getBiggestMovers(data, keys, 3);
   }, [data]);
 
   return (
@@ -123,6 +138,40 @@ export default function Home() {
               metric="nupl"
               format={formatDecimal}
             />
+          </div>
+        </section>
+      )}
+
+      {/* Biggest Movers */}
+      {biggestMovers.length > 0 && (
+        <section
+          className="relative mx-auto max-w-4xl px-4 pb-10"
+          style={{ animation: "fadeIn 0.8s ease-out 0.65s both" }}
+        >
+          <p className="mb-3 text-center font-[family-name:var(--font-mono)] text-[10px] font-bold tracking-[0.2em] uppercase text-zinc-600">
+            Biggest 24h Movers
+          </p>
+          <div className="flex justify-center gap-3">
+            {biggestMovers.map((m) => {
+              const label = catalogMap.get(m.key)?.label ?? m.key;
+              return (
+                <Link
+                  key={m.key}
+                  href={`/metrics/${m.key.replace(/_/g, "-")}`}
+                  className="flex items-center gap-2 rounded-lg border border-zinc-800/60 bg-[var(--bg-card)] px-4 py-2 transition-colors hover:border-zinc-700"
+                >
+                  <span className="text-[12px] text-zinc-400">{label}</span>
+                  <span
+                    className={`font-mono text-sm font-bold ${
+                      m.direction === "up" ? "text-green-400" : "text-red-400"
+                    }`}
+                  >
+                    {m.direction === "up" ? "↑" : "↓"}
+                    {Math.abs(m.change).toFixed(1)}%
+                  </span>
+                </Link>
+              );
+            })}
           </div>
         </section>
       )}

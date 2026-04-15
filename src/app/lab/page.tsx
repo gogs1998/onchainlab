@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useMetrics } from "@/components/DataProvider";
 import { getMetricSeries } from "@/lib/data";
 import { metricCatalog } from "@/lib/metrics";
 import MetricSelector from "@/components/lab/MetricSelector";
 import ChartPanel from "@/components/lab/ChartPanel";
+import CompareChart from "@/components/lab/CompareChart";
 
 const DEFAULT_METRICS = ["btc_price", "mvrv_zscore"];
 
@@ -20,11 +21,39 @@ const RANGES: { key: TimeRange; label: string; days: number | null }[] = [
   { key: "all", label: "ALL", days: null },
 ];
 
+function parseUrlParams(): { metrics: string[] | null; range: TimeRange | null } {
+  if (typeof window === "undefined") return { metrics: null, range: null };
+  const params = new URLSearchParams(window.location.search);
+  const m = params.get("m");
+  const r = params.get("range") as TimeRange | null;
+  return {
+    metrics: m ? m.split(",").filter(Boolean) : null,
+    range: r && RANGES.some((x) => x.key === r) ? r : null,
+  };
+}
+
 export default function LabPage() {
   const { data } = useMetrics();
-  const [selectedMetrics, setSelectedMetrics] =
-    useState<string[]>(DEFAULT_METRICS);
-  const [timeRange, setTimeRange] = useState<TimeRange>("all");
+
+  // Read URL params on mount
+  const initial = useMemo(() => parseUrlParams(), []);
+  const [selectedMetrics, setSelectedMetrics] = useState<string[]>(
+    initial.metrics ?? DEFAULT_METRICS,
+  );
+  const [timeRange, setTimeRange] = useState<TimeRange>(
+    initial.range ?? "all",
+  );
+  const [compareMode, setCompareMode] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  // Sync URL params
+  useEffect(() => {
+    const params = new URLSearchParams();
+    params.set("m", selectedMetrics.join(","));
+    if (timeRange !== "all") params.set("range", timeRange);
+    const url = `${window.location.pathname}?${params.toString()}`;
+    window.history.replaceState(null, "", url);
+  }, [selectedMetrics, timeRange]);
 
   const catalogMap = useMemo(() => {
     const map = new Map<string, (typeof metricCatalog)[number]>();
@@ -38,17 +67,42 @@ export default function LabPage() {
     [data, rangeDays],
   );
 
-  // Pre-compute BTC price series for overlay (once, using sliced data)
   const priceData = useMemo(
     () => getMetricSeries(slicedData, "btc_price"),
     [slicedData],
   );
 
-  const handleToggle = (key: string) => {
+  const handleToggle = useCallback((key: string) => {
     setSelectedMetrics((prev) =>
       prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
     );
-  };
+  }, []);
+
+  const handleShare = useCallback(() => {
+    navigator.clipboard.writeText(window.location.href);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, []);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      const rangeKeys: Record<string, TimeRange> = {
+        "1": "7d", "2": "1m", "3": "3m", "4": "6m", "5": "1y", "6": "2y", "7": "all",
+      };
+      if (rangeKeys[e.key]) {
+        e.preventDefault();
+        setTimeRange(rangeKeys[e.key]);
+      }
+      if (e.key === "c") {
+        e.preventDefault();
+        setCompareMode((p) => !p);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   return (
     <div className="flex" style={{ height: "calc(100vh - 57px)" }}>
@@ -57,21 +111,53 @@ export default function LabPage() {
 
       {/* Chart area */}
       <div className="flex-1 overflow-y-auto bg-[var(--bg-primary)] p-4 xl:p-6">
-        {/* Time range selector */}
-        <div className="mb-4 flex items-center gap-1">
-          {RANGES.map((r) => (
-            <button
-              key={r.key}
-              onClick={() => setTimeRange(r.key)}
-              className={`rounded-md px-3 py-1 text-[11px] font-semibold tracking-wide transition-colors ${
-                timeRange === r.key
-                  ? "bg-blue-500/20 text-blue-400"
-                  : "text-zinc-500 hover:bg-zinc-800/50 hover:text-zinc-300"
-              }`}
-            >
-              {r.label}
-            </button>
-          ))}
+        {/* Toolbar */}
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          {/* Time ranges */}
+          <div className="flex items-center gap-1">
+            {RANGES.map((r, i) => (
+              <button
+                key={r.key}
+                onClick={() => setTimeRange(r.key)}
+                className={`rounded-md px-3 py-1 text-[11px] font-semibold tracking-wide transition-colors ${
+                  timeRange === r.key
+                    ? "bg-blue-500/20 text-blue-400"
+                    : "text-zinc-500 hover:bg-zinc-800/50 hover:text-zinc-300"
+                }`}
+                title={`${r.label} (key: ${i + 1})`}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="h-4 w-px bg-zinc-800" />
+
+          {/* Compare mode */}
+          <button
+            onClick={() => setCompareMode((p) => !p)}
+            className={`rounded-md px-3 py-1 text-[11px] font-semibold tracking-wide transition-colors ${
+              compareMode
+                ? "bg-cyan-500/20 text-cyan-400"
+                : "text-zinc-500 hover:bg-zinc-800/50 hover:text-zinc-300"
+            }`}
+            title="Compare all selected metrics (normalized) — key: C"
+          >
+            Compare
+          </button>
+
+          {/* Share */}
+          <button
+            onClick={handleShare}
+            className="rounded-md px-3 py-1 text-[11px] font-semibold tracking-wide text-zinc-500 transition-colors hover:bg-zinc-800/50 hover:text-zinc-300"
+          >
+            {copied ? "✓ Copied!" : "Share"}
+          </button>
+
+          {/* Keyboard hint */}
+          <span className="ml-auto hidden text-[10px] text-zinc-700 lg:inline">
+            Keys: 1-7 range · C compare
+          </span>
         </div>
 
         {selectedMetrics.length === 0 ? (
@@ -97,6 +183,12 @@ export default function LabPage() {
               </p>
             </div>
           </div>
+        ) : compareMode ? (
+          <CompareChart
+            metricKeys={selectedMetrics}
+            data={slicedData}
+            catalogMap={catalogMap}
+          />
         ) : (
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
             {selectedMetrics.map((key) => {

@@ -65,3 +65,62 @@ export function getMetricSeries(
 export function getLastNDays(data: MetricRow[], n: number): MetricRow[] {
   return data.slice(-n);
 }
+
+/**
+ * Compute a simple z-score for the latest value of a metric
+ * relative to its full history: (value - mean) / std.
+ */
+export function getMetricZScore(
+  data: MetricRow[],
+  metric: string,
+): number | null {
+  const values: number[] = [];
+  for (const row of data) {
+    const v = row[metric];
+    if (v != null && typeof v === "number" && !Number.isNaN(v)) {
+      values.push(v);
+    }
+  }
+  if (values.length < 30) return null;
+  const last = values[values.length - 1];
+  const mean = values.reduce((a, b) => a + b, 0) / values.length;
+  const variance =
+    values.reduce((a, b) => a + (b - mean) ** 2, 0) / values.length;
+  const std = Math.sqrt(variance);
+  if (std === 0) return null;
+  return (last - mean) / std;
+}
+
+/**
+ * Get the biggest 24h movers — metric with largest absolute change
+ * between the last two data rows.
+ */
+export function getBiggestMovers(
+  data: MetricRow[],
+  metricKeys: string[],
+  n = 5,
+): { key: string; change: number; direction: "up" | "down" }[] {
+  if (data.length < 2) return [];
+  const prev = data[data.length - 2];
+  const curr = data[data.length - 1];
+  const movers: { key: string; change: number; direction: "up" | "down" }[] = [];
+
+  for (const key of metricKeys) {
+    const p = prev[key];
+    const c = curr[key];
+    if (
+      p == null || c == null ||
+      typeof p !== "number" || typeof c !== "number" ||
+      Number.isNaN(p) || Number.isNaN(c) || p === 0
+    ) continue;
+    const pctChange = ((c - p) / Math.abs(p)) * 100;
+    movers.push({
+      key,
+      change: pctChange,
+      direction: pctChange >= 0 ? "up" : "down",
+    });
+  }
+
+  movers.sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
+  return movers.slice(0, n);
+}

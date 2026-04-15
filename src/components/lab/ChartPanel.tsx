@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createChart, LineSeries } from "lightweight-charts";
 import { metricCatalog } from "@/lib/metrics";
+import { getZoneLines } from "@/lib/signals";
 
 /** Assign a stable color per metric key. */
 const CHART_COLORS = [
@@ -45,6 +46,7 @@ export default function ChartPanel({
   const [showPrice, setShowPrice] = useState(false);
   const [logScale, setLogScale] = useState(false);
   const [showDesc, setShowDesc] = useState(false);
+  const [showZones, setShowZones] = useState(true);
 
   const description =
     metricCatalog.find((m) => m.key === metricKey)?.description ?? "";
@@ -97,6 +99,21 @@ export default function ChartPanel({
       data.map((d) => ({ time: d.date as string, value: d.value }))
     );
 
+    // Signal zone lines
+    if (showZones) {
+      const zoneLines = getZoneLines(metricKey);
+      for (const zl of zoneLines) {
+        series.createPriceLine({
+          price: zl.value,
+          color: zl.color,
+          lineWidth: 1,
+          lineStyle: zl.lineStyle,
+          axisLabelVisible: false,
+          title: zl.label,
+        });
+      }
+    }
+
     // BTC price overlay (right scale, semi-transparent)
     if (showPrice && !isBtcPrice && priceData && priceData.length > 0) {
       const priceSeries = chart.addSeries(LineSeries, {
@@ -129,7 +146,7 @@ export default function ChartPanel({
       ro.disconnect();
       chart.remove();
     };
-  }, [metricKey, data, priceData, showPrice, logScale, isBtcPrice]);
+  }, [metricKey, data, priceData, showPrice, logScale, showZones, isBtcPrice]);
 
   return (
     <div className="overflow-hidden rounded-lg border border-zinc-800/60 bg-[var(--bg-card)] shadow-lg shadow-black/20">
@@ -157,6 +174,20 @@ export default function ChartPanel({
               title="Show metric info"
             >
               i
+            </button>
+          )}
+          {/* Zone lines toggle */}
+          {getZoneLines(metricKey).length > 0 && (
+            <button
+              onClick={() => setShowZones((p) => !p)}
+              className={`rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors ${
+                showZones
+                  ? "bg-green-500/15 text-green-400"
+                  : "text-zinc-600 hover:bg-zinc-800/60 hover:text-zinc-400"
+              }`}
+              title="Toggle signal zones"
+            >
+              Z
             </button>
           )}
           {/* Log toggle */}

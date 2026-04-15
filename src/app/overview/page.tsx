@@ -2,8 +2,9 @@
 
 import { useMemo } from "react";
 import { useMetrics } from "@/components/DataProvider";
-import { getLatestRow, getLatestValue, getLastNDays, getMetricSeries } from "@/lib/data";
+import { getLatestRow, getLatestValue, getLastNDays, getMetricSeries, getMetricZScore } from "@/lib/data";
 import { getSignalZone } from "@/lib/signals";
+import { metricCatalog } from "@/lib/metrics";
 import SectionHeader from "@/components/overview/SectionHeader";
 import MetricCard from "@/components/overview/MetricCard";
 
@@ -350,6 +351,9 @@ export default function OverviewPage() {
         </div>
       </div>
 
+      {/* Metric Extremes — "What's screaming right now?" */}
+      <MetricExtremes data={data} />
+
       {/* Sections */}
       {sections.map((section) => (
         <section key={section.title}>
@@ -372,6 +376,68 @@ export default function OverviewPage() {
 
       {/* Bottom spacing */}
       <div className="h-12" />
+    </div>
+  );
+}
+
+/* ── Metric Extremes sub-component ────────────────────────── */
+
+function MetricExtremes({ data }: { data: import("@/lib/types").MetricRow[] }) {
+  const extremes = useMemo(() => {
+    const candidates = metricCatalog
+      .filter((m) => m.key !== "btc_price" && m.key !== "market_cap" && m.key !== "realized_cap")
+      .map((m) => {
+        const z = getMetricZScore(data, m.key);
+        return { ...m, zscore: z };
+      })
+      .filter((m) => m.zscore !== null)
+      .sort((a, b) => Math.abs(b.zscore!) - Math.abs(a.zscore!))
+      .slice(0, 5);
+    return candidates;
+  }, [data]);
+
+  if (extremes.length === 0) return null;
+
+  return (
+    <div className="mb-8">
+      <SectionHeader title="Most Extreme Readings" />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-5">
+        {extremes.map((m) => {
+          const absZ = Math.abs(m.zscore!);
+          const isHigh = m.zscore! > 0;
+          const barColor = absZ > 2 ? (isHigh ? "#ef4444" : "#22c55e") : "#eab308";
+          const barWidth = Math.min(absZ / 3, 1) * 100;
+          return (
+            <div
+              key={m.key}
+              className="rounded-lg border border-zinc-800/60 bg-[var(--bg-card)] p-3"
+            >
+              <p className="text-[11px] font-semibold text-zinc-300 truncate">
+                {m.label}
+              </p>
+              <p
+                className="mt-1 text-lg font-bold"
+                style={{ color: barColor }}
+              >
+                {m.zscore! > 0 ? "+" : ""}
+                {m.zscore!.toFixed(1)}σ
+              </p>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-zinc-800">
+                <div
+                  className="h-full rounded-full transition-all"
+                  style={{
+                    width: `${barWidth}%`,
+                    backgroundColor: barColor,
+                  }}
+                />
+              </div>
+              <p className="mt-1 text-[9px] text-zinc-600">
+                {absZ > 2 ? "Extreme" : absZ > 1 ? "Elevated" : "Moderate"}
+              </p>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
