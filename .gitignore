@@ -42,3 +42,12 @@ next-env.d.ts
 
 # large data files tracked via git (10.9MB CSV)
 # public/data/all_metrics.csv
+
+# OpenNext
+.open-next
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+!.env.example
