@@ -33,6 +33,23 @@ export function getLatestRow(data: MetricRow[]): MetricRow {
   return data[data.length - 1];
 }
 
+/**
+ * Walk backwards to find the most recent non-null value for a metric.
+ * Returns the value and the date it came from.
+ */
+export function getLatestValue(
+  data: MetricRow[],
+  metric: string,
+): { value: number; date: string } | null {
+  for (let i = data.length - 1; i >= 0; i--) {
+    const v = data[i][metric];
+    if (v != null && typeof v === "number" && !Number.isNaN(v)) {
+      return { value: v, date: data[i].date };
+    }
+  }
+  return null;
+}
+
 export function getMetricSeries(
   data: MetricRow[],
   metric: string

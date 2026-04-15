@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useMetrics } from "@/components/DataProvider";
-import { getLatestRow, getLastNDays, getMetricSeries } from "@/lib/data";
+import { getLatestRow, getLatestValue, getLastNDays, getMetricSeries } from "@/lib/data";
 import SectionHeader from "@/components/overview/SectionHeader";
 import MetricCard from "@/components/overview/MetricCard";
 
@@ -204,6 +204,21 @@ export default function OverviewPage() {
     [data],
   );
 
+  // Per-metric latest non-null value (handles trailing sparse rows)
+  const latestValues = useMemo(() => {
+    if (data.length === 0) return new Map<string, number | null>();
+    const map = new Map<string, number | null>();
+    for (const section of sections) {
+      for (const card of section.cards) {
+        if (!map.has(card.metric)) {
+          const hit = getLatestValue(data, card.metric);
+          map.set(card.metric, hit ? hit.value : null);
+        }
+      }
+    }
+    return map;
+  }, [data]);
+
   // Pre-compute all spark series
   const sparkMap = useMemo(() => {
     if (last90.length === 0) return new Map<string, { date: string; value: number }[]>();
@@ -242,7 +257,7 @@ export default function OverviewPage() {
                 key={card.metric}
                 label={card.label}
                 metric={card.metric}
-                value={latest[card.metric] as number | null}
+                value={latestValues.get(card.metric) ?? null}
                 description={card.description}
                 sparkData={sparkMap.get(card.metric) ?? []}
                 format={card.format}
