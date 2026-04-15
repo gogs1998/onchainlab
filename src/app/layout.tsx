@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import Nav from "@/components/Nav";
 import DataProvider from "@/components/DataProvider";
+import ChatPanel from "@/components/ChatPanel";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -34,6 +35,7 @@ export default function RootLayout({
         <Nav />
         <DataProvider>
           <main>{children}</main>
+          <ChatPanel />
         </DataProvider>
       </body>
     </html>
